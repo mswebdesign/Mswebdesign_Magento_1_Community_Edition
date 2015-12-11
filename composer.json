@@ -1,0 +1,7 @@
+{
+    "name":"magento/magento-core",
+    "type":"magento-source",
+    "require":{
+        "aoepeople/composer-installers":"*"
+    }
+}
