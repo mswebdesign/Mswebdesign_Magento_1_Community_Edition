@@ -20,7 +20,7 @@
  *
  * @category    Mage
  * @package     Mage_SalesRule
- * @copyright  Copyright (c) 2006-2015 X.commerce, Inc. (http://www.magento.com)
+ * @copyright  Copyright (c) 2006-2016 X.commerce, Inc. and affiliates (http://www.magento.com)
  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
 
@@ -90,42 +90,44 @@ class Mage_SalesRule_Model_Observer
         $customerId = $order->getCustomerId();
 
         // use each rule (and apply to customer, if applicable)
-        foreach ($ruleIds as $ruleId) {
-            if (!$ruleId) {
-                continue;
-            }
-            $rule = Mage::getModel('salesrule/rule');
-            $rule->load($ruleId);
-            if ($rule->getId()) {
-                $rule->setTimesUsed($rule->getTimesUsed() + 1);
-                $rule->save();
+        if ($order->getDiscountAmount() != 0) {
+            foreach ($ruleIds as $ruleId) {
+                if (!$ruleId) {
+                    continue;
+                }
+                $rule = Mage::getModel('salesrule/rule');
+                $rule->load($ruleId);
+                if ($rule->getId()) {
+                    $rule->setTimesUsed($rule->getTimesUsed() + 1);
+                    $rule->save();
 
-                if ($customerId) {
-                    $ruleCustomer = Mage::getModel('salesrule/rule_customer');
-                    $ruleCustomer->loadByCustomerRule($customerId, $ruleId);
+                    if ($customerId) {
+                        $ruleCustomer = Mage::getModel('salesrule/rule_customer');
+                        $ruleCustomer->loadByCustomerRule($customerId, $ruleId);
 
-                    if ($ruleCustomer->getId()) {
-                        $ruleCustomer->setTimesUsed($ruleCustomer->getTimesUsed() + 1);
+                        if ($ruleCustomer->getId()) {
+                            $ruleCustomer->setTimesUsed($ruleCustomer->getTimesUsed() + 1);
+                        }
+                        else {
+                            $ruleCustomer
+                            ->setCustomerId($customerId)
+                            ->setRuleId($ruleId)
+                            ->setTimesUsed(1);
+                        }
+                        $ruleCustomer->save();
                     }
-                    else {
-                        $ruleCustomer
-                        ->setCustomerId($customerId)
-                        ->setRuleId($ruleId)
-                        ->setTimesUsed(1);
-                    }
-                    $ruleCustomer->save();
                 }
             }
-        }
-        $coupon = Mage::getModel('salesrule/coupon');
-        /** @var Mage_SalesRule_Model_Coupon */
-        $coupon->load($order->getCouponCode(), 'code');
-        if ($coupon->getId()) {
-            $coupon->setTimesUsed($coupon->getTimesUsed() + 1);
-            $coupon->save();
-            if ($customerId) {
-                $couponUsage = Mage::getResourceModel('salesrule/coupon_usage');
-                $couponUsage->updateCustomerCouponTimesUsed($customerId, $coupon->getId());
+            $coupon = Mage::getModel('salesrule/coupon');
+            /** @var Mage_SalesRule_Model_Coupon */
+            $coupon->load($order->getCouponCode(), 'code');
+            if ($coupon->getId()) {
+                $coupon->setTimesUsed($coupon->getTimesUsed() + 1);
+                $coupon->save();
+                if ($customerId) {
+                    $couponUsage = Mage::getResourceModel('salesrule/coupon_usage');
+                    $couponUsage->updateCustomerCouponTimesUsed($customerId, $coupon->getId());
+                }
             }
         }
     }
